@@ -13,6 +13,7 @@ import sys
 import subprocess
 import re
 
+os.link = os.symlink
 # may need to work around setuptools bug by providing a fake Pyrex
 try:
     import Cython
@@ -164,14 +165,16 @@ def write_version_py(filename=pjoin(curdir, 'statsmodels/version.py')):
 
 
     if dowrite:
+       
+        a = open(filename, 'w')
         try:
-            a = open(filename, 'w')
             a.write(cnt % {'version': VERSION,
                            'full_version' : FULLVERSION,
                            'git_revision' : GIT_REVISION,
                            'isrelease': str(ISRELEASED)})
         finally:
-            a.close()
+            if(a != None):
+                a.close()
 
 try:
     from distutils.command.build_py import build_py_2to3 as build_py
