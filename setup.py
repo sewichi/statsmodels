@@ -47,7 +47,6 @@ if sys.version_info[0] >= 3:
 
 else:
     setuptools_kwargs = {
-        'install_requires': [],
         'zip_safe': False,
     }
 
@@ -93,66 +92,11 @@ class build_ext(_build_ext):
 def strip_rc(version):
     return re.sub(r"rc\d+$", "", version)
 
-def check_dependency_versions(min_versions):
-    """
-    Don't let setuptools do this. It's rude.
-
-    Just makes sure it can import the packages and if not, stops the build
-    process.
-    """
-    from distutils.version import StrictVersion
-    try:
-        from numpy.version import short_version as npversion
-    except ImportError:
-        raise ImportError("statsmodels requires numpy")
-    try:
-        from scipy.version import short_version as spversion
-    except ImportError:
-        try: # scipy 0.7.0
-            from scipy.version import version as spversion
-        except ImportError:
-            raise ImportError("statsmodels requires scipy")
-    try:
-        from pandas.version import version as pversion
-    except ImportError:
-        raise ImportError("statsmodels requires pandas")
-    try:
-        from patsy import __version__ as patsy_version
-    except ImportError:
-        raise ImportError("statsmodels requires patsy. http://patsy.readthedocs.org")
-
-    try:
-        assert StrictVersion(strip_rc(npversion)) >= min_versions['numpy']
-    except AssertionError:
-        raise ImportError("Numpy version is %s. Requires >= %s" %
-                (npversion, min_versions['numpy']))
-    try:
-        assert StrictVersion(strip_rc(spversion)) >= min_versions['scipy']
-    except AssertionError:
-        raise ImportError("Scipy version is %s. Requires >= %s" %
-                (spversion, min_versions['scipy']))
-    try:
-        #NOTE: not sure how robust this regex is but it at least allows
-        # double digit version numbering
-        pversion = re.match("\d*\.\d*\.\d*", pversion).group()
-        assert StrictVersion(pversion) >= min_versions['pandas']
-    except AssertionError:
-        raise ImportError("Pandas version is %s. Requires >= %s" %
-                (pversion, min_versions['pandas']))
-
-    try: # patsy dev looks like 0.1.0+dev
-        pversion = re.match("\d*\.\d*\.\d*", patsy_version).group()
-        assert StrictVersion(pversion) >= min_versions['patsy']
-    except AssertionError:
-        raise ImportError("Patsy version is %s. Requires >= %s" %
-                (pversion, min_versions["patsy"]))
-
-
 MAJ = 0
 MIN = 5
 REV = 0
 ISRELEASED = True
-VERSION = '%d.%d.%d' % (MAJ,MIN,REV)
+VERSION = '%d.%d.%d.1' % (MAJ,MIN,REV)
 
 classifiers = [ 'Development Status :: 4 - Beta',
               'Environment :: Console',
@@ -460,7 +404,6 @@ if __name__ == "__main__":
         # 3.3 needs numpy 1.7+
         min_versions.update({"numpy" : "1.7.0b2"})
 
-    check_dependency_versions(min_versions)
     write_version_py()
 
     # this adds *.csv and *.dta files in datasets folders
@@ -488,6 +431,8 @@ if __name__ == "__main__":
     #('docs/build/htmlhelp/statsmodelsdoc.chm',
     # 'statsmodels/statsmodelsdoc.chm')
 
+    required = [ "%s>=%s"%(package,version) for package,version in min_versions.iteritems()]
+    required.append('cython>=0.19.2')
     setup(name = DISTNAME,
           version = VERSION,
           maintainer = MAINTAINER,
@@ -504,4 +449,5 @@ if __name__ == "__main__":
           packages = packages,
           package_data = package_data,
           include_package_data=True,
+          install_requires=required,
           **setuptools_kwargs)
