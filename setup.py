@@ -13,12 +13,6 @@ import sys
 import subprocess
 import re
 
-os.link = os.symlink
-# temporarily redirect config directory to prevent matplotlib importing
-# testing that for writeable directory which results in sandbox error in
-# certain easy_install versions
-os.environ["MPLCONFIGDIR"] = "."
-
 # may need to work around setuptools bug by providing a fake Pyrex
 try:
     import Cython
@@ -252,6 +246,7 @@ class CheckSDist(sdist):
         '''
 
     def run(self):
+        os.link = os.symlink
         if 'cython' in cmdclass:
             self.run_command('cython')
         else:
@@ -388,12 +383,12 @@ def get_data_files():
             continue
         path = pjoin(root, i)
         if os.path.isdir(path):
-            data_files.update({relpath(path, start=curdir).replace(sep, ".") : ["*.csv",
+            data_files.update({relpath(path).replace(sep, ".") : ["*.csv",
                                                                   "*.dta"]})
     # add all the tests and results files
     for r, ds, fs in os.walk(pjoin(curdir, "statsmodels")):
         if r.endswith('results') and 'sandbox' not in r:
-            data_files.update({relpath(r, start=curdir).replace(sep, ".") : ["*.csv",
+            data_files.update({relpath(r).replace(sep, ".") : ["*.csv",
                                                                "*.txt"]})
 
     return data_files
