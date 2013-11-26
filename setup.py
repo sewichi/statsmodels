@@ -13,7 +13,6 @@ import sys
 import subprocess
 import re
 
-os.link = os.symlink
 # may need to work around setuptools bug by providing a fake Pyrex
 try:
     import Cython
@@ -247,6 +246,7 @@ class CheckSDist(sdist):
         '''
 
     def run(self):
+        os.link = os.symlink
         if 'cython' in cmdclass:
             self.run_command('cython')
         else:
