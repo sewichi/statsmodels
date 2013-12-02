@@ -12,7 +12,9 @@ from os.path import splitext, basename, join as pjoin
 import sys
 import subprocess
 import re
+from shutil import copyfile
 
+os.link = copy2
 # may need to work around setuptools bug by providing a fake Pyrex
 try:
     import Cython
@@ -66,8 +68,6 @@ LICENSE = 'BSD License'
 DOWNLOAD_URL = ''
 
 from distutils.extension import Extension
-from distutils.command.build import build
-from distutils.command.sdist import sdist
 from distutils.command.build_ext import build_ext as _build_ext
 
 try:
@@ -227,37 +227,6 @@ class CleanCommand(Command):
                 pass
 
 
-class CheckSDist(sdist):
-    """Custom sdist that ensures Cython has compiled all pyx files to c."""
-
-    _pyxfiles = ['statsmodels/nonparametric/linbin.pyx',
-                 'statsmodels/nonparametric/_smoothers_lowess.pyx',
-                 'statsmodels/tsa/kalmanf/kalman_loglike.pyx']
-
-    def initialize_options(self):
-        sdist.initialize_options(self)
-
-        '''
-        self._pyxfiles = []
-        for root, dirs, files in os.walk('statsmodels'):
-            for f in files:
-                if f.endswith('.pyx'):
-                    self._pyxfiles.append(pjoin(root, f))
-        '''
-
-    def run(self):
-        os.link = os.symlink
-        if 'cython' in cmdclass:
-            self.run_command('cython')
-        else:
-            for pyxfile in self._pyxfiles:
-                cfile = pyxfile[:-3] + 'c'
-                msg = "C-source file '%s' not found." % (cfile) +\
-                    " Run 'setup.py cython' before sdist."
-                assert os.path.isfile(cfile), msg
-        sdist.run(self)
-
-
 class CheckingBuildExt(build_ext):
     """Subclass build_ext to get clearer report if Cython is necessary."""
 
@@ -298,9 +267,7 @@ class DummyBuildSrc(Command):
         pass
 
 
-cmdclass = {'clean': CleanCommand,
-            'build': build,
-            'sdist': CheckSDist}
+cmdclass = {'clean': CleanCommand}
 
 if cython:
     suffix = ".pyx"
@@ -415,6 +382,7 @@ if __name__ == "__main__":
     packages = find_packages()
     packages.append("statsmodels.tsa.vector_ar.data")
 
+    sys.stderr.write("PACKAGES = %s\n" % packages)
     package_data["statsmodels.datasets.tests"].append("*.zip")
     package_data["statsmodels.iolib.tests.results"].append("*.dta")
     package_data["statsmodels.stats.tests.results"].append("*.json")
